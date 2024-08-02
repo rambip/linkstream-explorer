@@ -16,6 +16,7 @@ pub fn compute(n: usize, interaction_matrix: &[Vec<f64>], params: ForceDirectedL
     let mut positions: Vec<Vec2> = (0..n)
         .map(|x| x as f64 / n as f64 * 6.2831)
         .map(Vec2::from_angle)
+        .map(|v| v+Vec2::new(1., 1.))
         .collect();
 
     // unite: L**3 T**(-1)

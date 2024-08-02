@@ -4,7 +4,6 @@ use dioxus::prelude::*;
 use tracing::Level;
 use async_std::task;
 use std::time::Duration;
-use cytoscape::Cytoscape;
 use serde::{Serialize, Deserialize};
 use kurbo::Vec2;
 use std::ops::Range;
@@ -14,9 +13,10 @@ use std::collections::HashMap;
 //use gloo_worker::Spawnable;
 use rust_lapper::{Interval};
 
-mod cytoscape;
 mod force_directed_layout;
-mod graph_to_cytoscape;
+mod render_graph;
+
+use render_graph::MyGraph;
 
 fn main() {
     // Init logger
@@ -24,15 +24,6 @@ fn main() {
     launch(Home);
 }
 
-#[derive(Clone, PartialEq, Default, Debug)]
-pub struct Graph {
-    pub size: usize,
-    pub names: Vec<Option<String>>,
-    pub node_weights: Option<Vec<f64>>,
-    pub node_classes: Vec<Vec<String>>,
-    pub edges: Vec<(usize, usize)>,
-    pub edge_weights: Option<Vec<Vec<f64>>>,
-}
 
 
 
@@ -156,37 +147,6 @@ where T: Coeff {
 
 
 
-fn generate_graph(link_stream: &LinkStream, time_window: Range<u64>) -> Graph {
-    let mut edges = Vec::new();
-    let n = link_stream.node_count();
-
-    let matrix = link_stream.interaction_matrix_naive(time_window);
-    let m = matrix.matrix_max();
-    let normalized_matrix = matrix.matrix_map(|x| x/m);
-
-    let node_weigths = matrix.sum_one_level();
-    let m = node_weigths.matrix_max();
-    let node_weigths_normalized = node_weigths.matrix_map(|x| x/m);
-
-    for n1 in 0..n {
-        for n2 in 0..n {
-            if matrix[n1][n2] > 0. {
-                edges.push((n1, n2));
-            }
-        }
-    }
-
-
-    Graph {
-        size: n,
-        names: link_stream.data.node_names.iter().map(|x| Some(x.clone())).collect(),
-        node_classes: vec![vec![]; n],
-        node_weights: Some(node_weigths_normalized),
-        edge_weights: Some(normalized_matrix),
-        edges
-    }
-}
-
 #[component]
 fn Menu(
     visible_toogle: Signal<bool>,
@@ -279,8 +239,8 @@ async fn LoadLinkstreamAndComputePositionsBg(data: LinkStreamData) -> (LinkStrea
         l_0: 0.03,
         k_r: 0.1,
         k_s: 0.02,
-        n_iterations: 500,
-        scale: 1000.,
+        n_iterations: 5,
+        scale: 500.,
     };
 
     let positions = force_directed_layout::compute(n, &normalized_matrix, params);
@@ -294,16 +254,35 @@ async fn load_linkstream_and_compute_positions(data: LinkStreamData) -> (LinkStr
 }
 
 #[component]
-fn GraphView(current_dataset: ReadOnlySignal<LinkStream>, time_window: ReadOnlySignal<Range<u64>>, positions: ReadOnlySignal<Vec<Vec2>>) -> Element {
-    let graph = use_memo(
-        move || generate_graph(&current_dataset.read(), time_window.read().clone()).to_cytoscape(&positions.read())
-    );
+fn GraphView(current_dataset: LinkStream, time_window: Range<u64>, positions: Vec<Vec2>) -> Element {
+    let mut edges = Vec::new();
+    let n = current_dataset.node_count();
+
+    let matrix = current_dataset.interaction_matrix_naive(time_window);
+    let m = matrix.matrix_max();
+    let normalized_matrix = matrix.matrix_map(|x| x/m);
+
+    let node_weigths = matrix.sum_one_level();
+    let m = node_weigths.matrix_max();
+    let node_weigths_normalized = node_weigths.matrix_map(|x| x/m);
+
+    for n1 in 0..n {
+        for n2 in 0..n {
+            if matrix[n1][n2] > 0. {
+                edges.push((n1, n2));
+            }
+        }
+    }
 
     rsx!{
-        Cytoscape {
-            data: graph,
-            style: graph_to_cytoscape::create_style(),
-            pan: Vec2::new(0., 0.)
+        MyGraph {
+            size: n,
+            names: current_dataset.data.node_names.iter().map(|x| Some(x.clone())).collect(),
+            node_classes: vec![vec![]; n],
+            node_weights: node_weigths_normalized,
+            edge_weights: normalized_matrix,
+            edges,
+            positions: positions,
         }
     }
 }
@@ -331,7 +310,7 @@ fn Explorer(dataset: LinkStreamData) -> Element {
             Some((g, p)) => rsx!{
                 GraphView {
                     current_dataset: g.clone(),
-                    time_window: time_window,
+                    time_window: time_window(),
                     positions: p,
                 }
                 Menu {
