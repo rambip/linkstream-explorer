@@ -1,0 +1,203 @@
+@import "variables.css";
+
+.popup-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    
+}
+
+.popup-container-active {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto;
+    backdrop-filter: blur(5px);
+
+}
+
+.popup {
+    width: 45%;
+    height: auto;
+    background-color: white;
+    box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.20);
+    border-radius: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.popup-upload {
+    width: 45%;
+    height: 40px;
+    background-color: white;
+    box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.20);
+    border-radius: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.popup-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 4px;
+    border-bottom: 1px solid var(--disabled-color);
+}
+
+.popup-title {
+    color: var(--paragraph-color);
+    font-size: 1.4pc;
+    padding: 0;
+    margin: 4px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.close-btn {
+    border-radius: 8px;
+    transition: .1s;
+}
+
+.close-btn:hover {
+    color: white;
+    background-color: var(--paragraph-color);
+
+}
+
+.dummy-container {
+    height: 100%;
+    width: 100%;
+    top: 0;
+    left: 0;
+}
+
+.active-tag-dropdown {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    
+}
+
+.add-existing-tag-dropdown {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 12px;
+    margin-bottom: 12px;  
+}
+
+.create-new-tag {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-top: 12px;
+    margin-bottom: 12px; 
+}
+
+.create-new-tag-submenu {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 12px;
+    margin-bottom: 12px;  
+    font-size : 0.8pc
+}
+
+.form-add-tag {
+    margin-top: 8px;
+}
+
+.btn-create-tag {
+    background-color: rgb(61, 61, 218);
+    color: white;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 4px;
+    margin-top: 16px;
+
+}
+
+.btn-create-tag:hover{
+    background-color: rgb(108, 108, 215);
+    transition: .4s;
+}
+
+
+.trash-btn {
+    border-radius: 8px;
+    transition: .1s;
+}
+
+.trash-btn:hover {
+    box-shadow: 0px 0px 11px 0px rgba(0,0,0,0.75);
+    -webkit-box-shadow: 0px 0px 11px 0px rgba(0,0,0,0.75);
+    -moz-box-shadow: 0px 0px 11px 0px rgba(0,0,0,0.75);
+    transition: .5s;
+
+}
+
+.plus-btn {
+    border-radius: 8px;
+    transition: .1s;
+}
+
+.plus-btn:hover {
+    
+    box-shadow: 0px 0px 11px 0px rgba(0,0,0,0.75);
+    -webkit-box-shadow: 0px 0px 11px 0px rgba(0,0,0,0.75);
+    -moz-box-shadow: 0px 0px 11px 0px rgba(0,0,0,0.75);
+    transition: .5s;
+
+}
+
+#tag-name {
+    border-color: #ccc;
+    border-width: 1px;
+    border-style: solid;
+    padding: 8px;
+    font-size: 16px;
+    color: #7d7a7a;
+    font-family: "Reddit Mono";
+    font-weight: 400;
+    border-radius: 4px;
+}
+
+.name-input-container {
+    display: flex;
+    flex-direction: column;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+#btn-tag-popup {
+    padding: 1px;
+    padding-left: 2px;
+    padding-right: 2px;
+    border-radius: 4px;
+    transition: .5s;
+}
+
+#btn-tag-popup:hover {
+    color: white;
+    background-color: rgb(107, 107, 255);
+    
+}

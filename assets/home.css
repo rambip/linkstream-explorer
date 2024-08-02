@@ -1,0 +1,86 @@
+@import 'variables.css';
+
+body, html {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: "Reddit Mono";
+    overflow: hidden;
+}
+
+main {
+    height: 100%;
+}
+
+p {
+    margin: 4px;
+}
+
+/*resetting default list style*/
+ul {
+    list-style:none;
+    display: inline-flex;
+}
+ul, li { /* reset the margin and padding */
+    margin: 0;
+    padding: 0;
+
+}
+
+.info {
+    color: var(--info);
+    
+}
+
+.disabled {
+    color: var(--disabled-color);
+}
+
+.dropdown-dataset-wrapper {
+    padding-top: 4px;
+    margin-left: 25%;
+    margin-right: 25%;
+    height: 30px;
+}
+
+.dropdown-dataset {
+    padding: 5px;
+    color: gray;
+    border: 1px solid gray;
+    height: 100%;
+    width: 100%;
+    position: relative;
+    z-index: 5;
+}
+
+
+.graph-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 75%;
+}
+
+.gif-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.menu-container {
+    position: absolute;
+    top: 0;
+    left: 0 ;
+    right: 0;
+    display: grid; 
+    height: 100%;
+    grid-template-columns: 1.5fr minmax(0, 0.5fr); 
+    grid-template-rows: 2.6fr 0.2fr; 
+    gap: 0px 0px; 
+    grid-template-areas: 
+      ". ."
+      ". ."; 
+    pointer-events: none;
+}
