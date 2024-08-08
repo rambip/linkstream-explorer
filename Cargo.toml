@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 
-dioxus = { version = "0.5", features = ["web"] }
+dioxus = { git = "https://github.com/DioxusLabs/dioxus", features = ["web"] }
 
 # Debug
 tracing = "0.1.40"

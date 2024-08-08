@@ -52,55 +52,57 @@ use dioxus_logger::tracing::info;
 #[component]
 pub fn Cytoscape(data: ReadOnlySignal<CytoscapeData>, style: CytoscapeStyle, pan: Vec2) -> Element {
     
-    let id = format!("cy-{}", CYTOSCAPE_ID.peek());
     *CYTOSCAPE_ID.write() += 1;
 
+    let cytoscape_bridge = use_signal(|| None);
 
+    const CYTOSCAPE_SETUP_CODE: &str = r#"
+        let id_str = await dioxus.recv();
+        let style_str = await dioxus.recv();
+        let pan = await dioxus.recv();
+        const cy = cytoscape({
+            container: document.getElementById(id_str),
+            elements: [],
+            style: JSON.parse(style_str),
+            layout : {name: "preset", uirevision: "static", fit:false},
+            pan: JSON.parse(pan),
+        })
+        console.log(style_str);
+        while (true) {
+            let elements_str = await dioxus.recv();
+            console.log(elements_str);
+            cy.add(JSON.parse(elements_str),)
+        }
+    "#;
 
-    let id2 = id.clone();
-    let setup_cytoscape = move || {
-        let eval = eval(
-            r#"
-            let id_str = await dioxus.recv();
-            let style_str = await dioxus.recv();
-            let pan = await dioxus.recv();
-            const cy = cytoscape({
-                container: document.getElementById(id_str),
-                elements: [],
-                style: JSON.parse(style_str),
-                layout : {name: "preset", uirevision: "static", fit:false},
-                pan: JSON.parse(pan),
-            })
-            console.log(style_str);
-            while (true) {
-                let elements_str = await dioxus.recv();
-                console.log(elements_str);
-                cy.add(JSON.parse(elements_str),)
-            }
-            "#,
-        );
-        eval.send( serde_json::Value::String(id.clone())).unwrap();
-        eval.send( serde_json::Value::String(serde_json::to_string(&style).unwrap())).unwrap();
-        eval.send( serde_json::Value::String(serde_json::to_string(&pan).unwrap())).unwrap();
+    let setup = |_| {
+        let eval = eval(CYTOSCAPE_SETUP_CODE);
 
-        use_effect(move ||
+        if let Some(eval) = cytoscape_bridge() {
+            eval.send( serde_json::Value::String(id.clone())).unwrap();
+            eval.send( serde_json::Value::String(serde_json::to_string(&style).unwrap())).unwrap();
+            eval.send( serde_json::Value::String(serde_json::to_string(&pan).unwrap())).unwrap();
+        }
+
+        *cytoscape_bridge.write() = Some(eval);
+    };
+
+    use_effect(move || {
+        if let Some(eval) = cytoscape_bridge() {
             eval.send(
                 serde_json::Value::String( serde_json::to_string(&*data.read()).unwrap())
             ).unwrap()
-        );
-    };
-
-    use_effect(move || { if *CYTOSCAPE_LOADED.read() { setup_cytoscape() } });
-
+        }
+    });
 
 
     rsx!{
         div {
-            id: id2,
+            id: "cy-{id}",
             class: "graph-container",
             script {
                 src: "https://cdn.jsdelivr.net/npm/cytoscape@3.30.0/dist/cytoscape.min.js",
-                onload: move |_| *CYTOSCAPE_LOADED.write() = true
+                onload: setup,
             }
         }
     }

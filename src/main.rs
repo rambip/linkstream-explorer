@@ -11,7 +11,7 @@ use tracing::info;
 use std::collections::HashMap;
 //use gloo_worker::oneshot::oneshot;
 //use gloo_worker::Spawnable;
-use rust_lapper::{Interval};
+use rust_lapper::{Lapper, Interval};
 
 mod force_directed_layout;
 mod render_graph;
@@ -37,6 +37,7 @@ fn TimeSlider() -> Element {
     rsx!{}
 }
 
+#[component]
 fn LoadingGif() -> Element {
     rsx!{
         div {
@@ -69,24 +70,33 @@ struct LinkStreamData {
     max_time: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct LinkStream {
     data: LinkStreamData,
     // TODO
-    // intervals: interval_tree::IntervalTree,
+    intervals: Lapper<u64, usize>,
+    name: String,
 }
 
 impl LinkStream {
-    fn interaction_matrix_naive(&self, time_window: Range<u64>) -> Vec<Vec<f64>> {
+    fn interaction_matrix(&self, time_window: Range<u64>) -> Vec<Vec<f64>> {
         let n = self.data.node_count;
         let mut result = vec![vec![0.; n]; n];
-        for &Link {n1, n2, start, end} in &self.data.links {
-            if !(time_window.start > end || start  > time_window.end) {
-                result[n1][n2] += (end - start) as f64;
-                result[n2][n1] += (end - start) as f64;
-            }
+        for it in self.intervals.find(time_window.start, time_window.end) {
+            let i_link = it.val;
+            let Link {n1, n2, start, end} = self.data.links[i_link];
+            result[n1][n2] += (end - start) as f64;
+            result[n2][n1] += (end - start) as f64;
         }
         result
+    }
+
+    fn data(&self) -> &LinkStreamData {
+        &self.data
+    }
+
+    fn name(&self) -> String {
+        self.name.clone()
     }
 
     fn node_count(&self) -> usize {
@@ -149,8 +159,8 @@ where T: Coeff {
 
 #[component]
 fn Menu(
+    current_dataset: ReadOnlySignal<LinkStream>,
     visible_toogle: Signal<bool>,
-    current_dataset: LinkStream,
     ) -> Element {
     rsx!{
         div {
@@ -199,38 +209,40 @@ fn Menu(
 }
 
 #[component]
-fn Popup(children: Vec<Element>) -> Element {
+fn Popup(children: Result<VNode, RenderError>) -> Element {
     rsx!{
         div {
             class: "dummy-container",
-            {children.into_iter()}
+            {children}
         }
     }
 }
 
-#[derive(Debug)]
-enum State {
-    Initial,
-    Exploring(String)
-}
-
-static DATASETS: [(&'static str, &'static str); 2] = [
+static DATASETS: [(&'static str, &'static str); 3] = [
     ("baboon", include_str!("../baboon.json")),
     ("school", include_str!("../school.json")),
+    ("example", include_str!("../example.json")),
 ];
-
-static STATE: GlobalSignal<State> = Signal::global(
-    || State::Initial,
-);
 
 
 //#[oneshot]
-async fn LoadLinkstreamAndComputePositionsBg(data: LinkStreamData) -> (LinkStream, Vec<Vec2>) {
+async fn LoadLinkstreamAndComputePositionsBg(name:String, data: &LinkStreamData) -> (LinkStream, Vec<Vec2>) {
     let n = data.node_count;
-    let LinkStreamData { min_time, max_time, ..} = data;
-    let link_stream = LinkStream {data};
+    let &LinkStreamData { min_time, max_time, ..} = data;
+    let intervals = Lapper::new(
+        data.links
+        .iter()
+        .enumerate()
+        .map(|(i, l)| Interval {start: l.start, stop: l.end, val: i})
+        .collect()
+    );
+    let link_stream = LinkStream {
+        data: data.clone(),
+        intervals,
+        name
+    };
 
-    let matrix = link_stream.interaction_matrix_naive(min_time..max_time);
+    let matrix = link_stream.interaction_matrix(min_time..max_time);
     let m = matrix.matrix_max();
     let normalized_matrix = matrix.matrix_map(|x| x/m);
 
@@ -247,18 +259,18 @@ async fn LoadLinkstreamAndComputePositionsBg(data: LinkStreamData) -> (LinkStrea
     return ( link_stream, positions )
 }
 
-async fn load_linkstream_and_compute_positions(data: LinkStreamData) -> (LinkStream, Vec<Vec2>) {
-    //tokio::spawn(
-        LoadLinkstreamAndComputePositionsBg(data).await
-    //).await.unwrap()
+async fn load_linkstream_and_compute_positions(name: String, data: LinkStreamData) -> (LinkStream, Vec<Vec2>) {
+    task::sleep(Duration::from_millis(1000)).await;
+    LoadLinkstreamAndComputePositionsBg(name, &data).await
 }
 
+// FIXME: LinkStream n'a pas PartialEq et je ne sais pas comment faire
 #[component]
-fn GraphView(current_dataset: LinkStream, time_window: Range<u64>, positions: Vec<Vec2>) -> Element {
+fn GraphView(current_dataset: ReadOnlySignal<LinkStream>, time_window: ReadOnlySignal<Range<u64>>, positions: Vec<Vec2>) -> Element {
     let mut edges = Vec::new();
-    let n = current_dataset.node_count();
+    let n = current_dataset.read().node_count();
 
-    let matrix = current_dataset.interaction_matrix_naive(time_window);
+    let matrix = current_dataset.read().interaction_matrix(time_window());
     let m = matrix.matrix_max();
     let normalized_matrix = matrix.matrix_map(|x| x/m);
 
@@ -277,7 +289,7 @@ fn GraphView(current_dataset: LinkStream, time_window: Range<u64>, positions: Ve
     rsx!{
         MyGraph {
             size: n,
-            names: current_dataset.data.node_names.iter().map(|x| Some(x.clone())).collect(),
+            names: current_dataset.read().data.node_names.iter().map(|x| Some(x.clone())).collect(),
             node_classes: vec![vec![]; n],
             node_weights: node_weigths_normalized,
             edge_weights: normalized_matrix,
@@ -294,34 +306,34 @@ fn InitialView() -> Element {
 }
 
 #[component]
-fn Explorer(dataset: LinkStreamData) -> Element {
-    let visible_toogle = use_signal(|| true);
+fn Explorer(name: ReadOnlySignal<String>, dataset: ReadOnlySignal<LinkStreamData>) -> Element {
+    info!("render Explorer");
+    let visible_toogle = use_signal(|| false);
 
-    let time_window = use_signal(|| dataset.min_time..dataset.max_time);
+    let mut time_window = use_signal(|| 0..0);
+    let mut view = use_signal(|| rsx!{});
 
-    let linkstream_resource = use_resource(
-        move || load_linkstream_and_compute_positions(
-            dataset.clone(),
-        )
-    );
 
-    rsx! {
-        match linkstream_resource.read().clone() {
-            Some((g, p)) => rsx!{
-                GraphView {
-                    current_dataset: g.clone(),
-                    time_window: time_window(),
-                    positions: p,
-                }
-                Menu {
-                    current_dataset: g,
-                    visible_toogle
-                }
-            },
-            None => rsx!{
-                LoadingGif {}
+    // TODO: ne pas cloner le stream ?
+    let _ = use_resource(move || async move {
+        *view.write() = rsx!{ LoadingGif {} };
+        let (stream, positions) = load_linkstream_and_compute_positions(name(), dataset()).await;
+        *time_window.write() = stream.time_window();
+        *view.write() = rsx!{
+            GraphView {
+                current_dataset: stream.clone(),
+                positions: positions,
+                time_window: time_window,
+            }
+            Menu {
+                current_dataset: stream,
+                visible_toogle: visible_toogle
             }
         }
+    });
+
+    rsx!{
+        {view}
     }
 }
 
@@ -333,20 +345,7 @@ fn Home() -> Element {
         .collect()
     );
 
-    use_effect(|| {
-        info!("{:?}", STATE.read())
-    });
-
-
-    let options = DATASETS.iter()
-        .map(|(name, _)| name.to_owned())
-        .map(|s| rsx!{
-            option{
-                value: s, 
-                onclick: move |_| *STATE.write() = State::Exploring(s.to_string()),
-                "{s}",
-            }
-        });
+    let mut current_dataset_name = use_signal(|| None);
 
     rsx!{
 
@@ -362,19 +361,21 @@ fn Home() -> Element {
                 id: "dataset-picker",
                 class: "dropdown-dataset",
                 value: "select your dataset",
-                {options}
+                for (name, _) in DATASETS.iter() {
+                    option{
+                        value: *name, 
+                        onclick: move |_| *current_dataset_name.write() = Some(name),
+                        "{name}"
+                    }
+                }
             }
         }
-
-        match &*STATE.read() {
-            State::Initial => rsx!{
-                InitialView {}
-            },
-            State::Exploring(x) => rsx!{
-                Explorer {
-                    dataset: datasets.read().get(x).unwrap().clone(),
-                }
-            },
+        match current_dataset_name() {
+            Some(name) => rsx! {Explorer {
+                name: *name,
+                dataset: datasets.read().get(*name).unwrap().clone()
+            }},
+            None => rsx!{InitialView {}}
         }
         Popup {
         }
