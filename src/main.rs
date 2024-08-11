@@ -1,22 +1,28 @@
-#![allow(non_snake_case)]
 
+use crate::utils::Matrix;
+use crate::linkstream::{LinkStreamData, LinkStream};
 use dioxus::prelude::*;
 use tracing::Level;
 use async_std::task;
 use std::time::Duration;
-use serde::{Serialize, Deserialize};
 use kurbo::Vec2;
 use std::ops::Range;
 use tracing::info;
 use std::collections::HashMap;
 //use gloo_worker::oneshot::oneshot;
 //use gloo_worker::Spawnable;
-use rust_lapper::{Lapper, Interval};
 
 mod force_directed_layout;
 mod render_graph;
+mod linkstream;
+mod utils;
+mod signal;
+mod svg_timeline;
+
+use svg_timeline::SvgTimeLine;
 
 use render_graph::MyGraph;
+use signal::use_branched_signal;
 
 fn main() {
     // Init logger
@@ -24,16 +30,150 @@ fn main() {
     launch(Home);
 }
 
+#[derive(Copy, Clone, PartialEq, Debug)]
+enum Direction {
+    Right,
+    Left,
+}
+
+#[component]
+fn Arrow(direction: Direction, onclick: EventHandler<MouseEvent>) -> Element {
+    let class_name = match direction {
+        Direction::Right => "arrow-right",
+        Direction::Left => "arrow-left",
+    };
+
+    let rotation_deg = match direction {
+        Direction::Right => -90,
+        Direction::Left => 90,
+    };
+
+    rsx!{
+        svg {
+            width:"24",
+            height:"24",
+            view_box:"0 0 512 512",
+            fill:"none",
+            class:class_name,
+            onclick: move |e| onclick.call(e),
+            path {
+                d:"M256 294.1L82.8 121.6C72.5 111.6 56.7 111.6 46.4 121.6C36.1 131.6 36.1 147.4 46.4 157.4L243.2 352.4C253.5 362.4 269.3 362.4 279.6 352.4L476.4 157.4C486.7 147.4 486.7 131.6 476.4 121.6C466.1 111.6 450.3 111.6 440 121.6L256 294.1Z",
+                fill:"currentColor",
+                transform:"rotate({rotation_deg} 256 256)" 
+            }
+        }
+    }
+}
+
+#[component]
+fn TimeSlider(
+    time_window: Signal<Range<u64>>,
+    current_dataset: ReadOnlySignal<LinkStream>,
+    zoom: ReadOnlySignal<f64>,
+    r_value: Signal<f64>,
+    time: ReadOnlySignal<u64>,
+    ) -> Element 
+{
+    // ne change que quand le zoom a lieu.
+    use_effect(move || {
+        info!("update");
+        let dataset_window = current_dataset.read().time_window();
+        let dataset_w = (dataset_window.end - dataset_window.start) as f64;
+        let new_w = dataset_w*(10f64).powf(-zoom());
+
+        let t = *time.peek() as f64;
+        let mut new_start: f64 = t-new_w/2.;
+        let mut new_end: f64 = t+new_w/2.;
 
 
+        if new_start < (dataset_window.start as f64) {
+            new_start = dataset_window.start as f64;
+            new_end = dataset_window.start as f64 + new_w;
+        }
+        
+        if new_end > (dataset_window.end as f64) {
+            new_end = dataset_window.end as f64;
+            new_start = dataset_window.end as f64 - new_w;
+        }
 
-#[allow(non_snake_case)]
-fn ToolBox() -> Element {
-    rsx!{}
+        time_window.set(new_start as u64..new_end as u64);
+        let new_v = (t-new_start) / new_w;
+        r_value.set(new_v);
+    });
+
+    let mut intensities = Vec::new();
+
+    let Range {start, end} = time_window();
+    let dt = (end-start)/100;
+    for i in 0..100 {
+        let time_point = start + i*dt;
+        let intensity = current_dataset.read().interaction_score_during(time_point as u64..time_point as u64+dt);
+        intensities.push(intensity)
+    }
+
+    let m = intensities.matrix_max();
+    let intensities = intensities.matrix_map(|x| x/m);
+    let empty = m==0.;
+
+
+    let mut translate_window = move |p: f64|  {
+        let dataset_window = current_dataset.read().time_window();
+        let Range {start, end} = time_window();
+        let w = end - start;
+        let dt = (p * w as f64) as i64;
+
+        let mut new_start = (start as i64 + dt) as u64;
+        let mut new_end = (end  as i64 + dt) as u64;
+
+        if new_start < (dataset_window.start) {
+            new_start = dataset_window.start ;
+            new_end = dataset_window.start + w;
+        }
+        
+        if new_end > (dataset_window.end ) {
+            new_end = dataset_window.end ;
+            new_start = dataset_window.end - w;
+        }
+
+        time_window.set(new_start..new_end)
+    };
+
+    rsx!{
+        div {
+            class: "time-line-container",
+            Arrow {
+                onclick: move |_| translate_window(-0.1),
+                direction: Direction::Left
+            }
+            input {
+                r#type: "range",
+                value: "{r_value}",
+                min: "0",
+                max: "1",
+                step: "any",
+                oninput: move |e| r_value.set(e.value().parse().unwrap()),
+                class: "time-slider",
+            }
+
+            div {
+                class: "svg-container",
+                SvgTimeLine {
+                    n_bar: 100,
+                    intensities: intensities,
+                    empty: empty
+                }
+            }
+
+            Arrow {
+                onclick: move |_| translate_window(0.1),
+                direction: Direction::Right
+            }
+        }
+    }
 }
 
 #[allow(non_snake_case)]
-fn TimeSlider() -> Element {
+fn ToolBox() -> Element {
     rsx!{}
 }
 
@@ -52,108 +192,7 @@ fn LoadingGif() -> Element {
     }
 }
 
-// TODO: utiliser `Interval`
-#[derive(Copy, Clone, Serialize, Deserialize, Debug, PartialEq)]
-struct Link {
-    n1: usize,
-    n2: usize,
-    start: u64,
-    end: u64
-}
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
-struct LinkStreamData {
-    node_count: usize,
-    node_names: Vec<String>,
-    links: Vec<Link>,
-    min_time: u64,
-    max_time: u64,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct LinkStream {
-    data: LinkStreamData,
-    // TODO
-    intervals: Lapper<u64, usize>,
-    name: String,
-}
-
-impl LinkStream {
-    fn interaction_matrix(&self, time_window: Range<u64>) -> Vec<Vec<f64>> {
-        let n = self.data.node_count;
-        let mut result = vec![vec![0.; n]; n];
-        for it in self.intervals.find(time_window.start, time_window.end) {
-            let i_link = it.val;
-            let Link {n1, n2, start, end} = self.data.links[i_link];
-            result[n1][n2] += (end - start) as f64;
-            result[n2][n1] += (end - start) as f64;
-        }
-        result
-    }
-
-    fn data(&self) -> &LinkStreamData {
-        &self.data
-    }
-
-    fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    fn node_count(&self) -> usize {
-        self.data.node_count
-    }
-
-    fn time_window(&self) -> Range<u64> {
-        self.data.min_time..self.data.max_time
-    }
-}
-
-trait Coeff : Copy + std::cmp::PartialOrd + core::iter::Sum {}
-
-impl Coeff for u32 {}
-impl Coeff for f64 {}
-impl Coeff for f32 {}
-
-trait Matrix : Clone {
-    type Item: Coeff;
-    type Row;
-    fn matrix_map(&self, f: impl Fn(Self::Item) -> Self::Item + Clone) -> Self;
-    fn matrix_max(&self) -> Self::Item;
-    fn sum_one_level(&self) -> Self::Row;
-}
- 
-
-impl<T> Matrix for Vec<T> 
-where T: Coeff {
-    type Item = T;
-    type Row = T;
-    fn matrix_map(&self, f: impl Fn(T) -> T + Clone) -> Self {
-        self.into_iter().map(|x| f(*x)).collect()
-    }
-    fn matrix_max(&self) -> T {
-        *self.into_iter().max_by(|a, b| T::partial_cmp(a, b).unwrap()).unwrap()
-    }
-    fn sum_one_level(&self) -> T {
-        self.into_iter().map(|x| *x).sum()
-    }
-}
-
-impl<T> Matrix for Vec<Vec<T>> 
-where T: Coeff {
-    type Item = T;
-    type Row = Vec<T>;
-    fn matrix_map(&self, f: impl Fn(T) -> T + Clone) -> Self {
-        self.into_iter().map(|x| x.matrix_map(f.clone())).collect()
-    }
-    fn matrix_max(&self) -> Self::Item {
-        self.into_iter()
-            .map(|x| x.matrix_max())
-            .max_by(|a, b| Self::Item::partial_cmp(a, b).unwrap()).unwrap()
-    }
-    fn sum_one_level(&self) -> Self::Row {
-        self.into_iter().map(|x| x.sum_one_level()).collect()
-    }
-}
 
 
 
@@ -161,7 +200,12 @@ where T: Coeff {
 fn Menu(
     current_dataset: ReadOnlySignal<LinkStream>,
     visible_toogle: Signal<bool>,
+    time_window: Signal<Range<u64>>,
+    time: ReadOnlySignal<u64>,
+    r_value: Signal<f64>,
     ) -> Element {
+    let mut zoom = use_signal(|| 0.);
+    
     rsx!{
         div {
         class: "menu-container",
@@ -169,26 +213,41 @@ fn Menu(
                 span {
                     id: "current-time",
                     class: "current-time",
+                    "current time: {time}"
                 }
             }
             div {
                 class: "right-bar",
-                ToolBox {}
+                //ToolBox {}
                 div {
                     id: "graph-info",
                     class: "graph-info",
                     div {
                         class: "rb-area tools",
-                        h2 {
-                            "Tools"
-                        }
-                        div {
-                            class: "toolbox",
-                            "icons" 
-                        }
+                        //h2 {
+                        //    "Tools"
+                        //}
+                        //div {
+                        //    class: "toolbox",
+                        //    "icons" 
+                        //}
                         div {
                             class: "zoom-container",
-                            "ZOOM stuff"
+                            p {
+                                class: "zoom-label",
+                                "Zoom"
+                            }
+                            span {"1x"}
+                            input {
+                                class: "zoom-slider",
+                                r#type: "range",
+                                value: "{zoom}",
+                                oninput: move |e| zoom.set(e.parsed().unwrap()),
+                                min: "0",
+                                max: "3",
+                                step: "any",
+                            }
+                            span {"1000x"}
                         }
                     }
                     div {
@@ -203,46 +262,41 @@ fn Menu(
                     }
                 }
             }
-            TimeSlider {}
+            TimeSlider {
+                current_dataset: current_dataset,
+                time_window: time_window,
+                zoom: zoom,
+                time: time,
+                r_value: r_value,
+            }
         }
     }
 }
 
 #[component]
-fn Popup(children: Result<VNode, RenderError>) -> Element {
+fn Popup(children: Vec<VNode>) -> Element {
     rsx!{
         div {
             class: "dummy-container",
-            {children}
+            {children.into_iter()}
         }
     }
 }
 
 static DATASETS: [(&'static str, &'static str); 3] = [
-    ("baboon", include_str!("../baboon.json")),
-    ("school", include_str!("../school.json")),
-    ("example", include_str!("../example.json")),
+    ("baboon", ("baboon.json")),
+    ("school", ("school.json")),
+    ("example",("example.json")),
 ];
 
 
 //#[oneshot]
-async fn LoadLinkstreamAndComputePositionsBg(name:String, data: &LinkStreamData) -> (LinkStream, Vec<Vec2>) {
-    let n = data.node_count;
-    let &LinkStreamData { min_time, max_time, ..} = data;
-    let intervals = Lapper::new(
-        data.links
-        .iter()
-        .enumerate()
-        .map(|(i, l)| Interval {start: l.start, stop: l.end, val: i})
-        .collect()
-    );
-    let link_stream = LinkStream {
-        data: data.clone(),
-        intervals,
-        name
-    };
+async fn load_linkstream_and_compute_positions(name:String, data: LinkStreamData) -> (LinkStream, Vec<Vec2>) {
+    let link_stream = LinkStream::new(name, data);
 
-    let matrix = link_stream.interaction_matrix(min_time..max_time);
+    let n = link_stream.node_count();
+
+    let matrix = link_stream.interaction_matrix(link_stream.time_window());
     let m = matrix.matrix_max();
     let normalized_matrix = matrix.matrix_map(|x| x/m);
 
@@ -251,7 +305,7 @@ async fn LoadLinkstreamAndComputePositionsBg(name:String, data: &LinkStreamData)
         l_0: 0.03,
         k_r: 0.1,
         k_s: 0.02,
-        n_iterations: 5,
+        n_iterations: 500,
         scale: 500.,
     };
 
@@ -259,40 +313,50 @@ async fn LoadLinkstreamAndComputePositionsBg(name:String, data: &LinkStreamData)
     return ( link_stream, positions )
 }
 
-async fn load_linkstream_and_compute_positions(name: String, data: LinkStreamData) -> (LinkStream, Vec<Vec2>) {
-    task::sleep(Duration::from_millis(1000)).await;
-    LoadLinkstreamAndComputePositionsBg(name, &data).await
-}
-
 // FIXME: LinkStream n'a pas PartialEq et je ne sais pas comment faire
 #[component]
-fn GraphView(current_dataset: ReadOnlySignal<LinkStream>, time_window: ReadOnlySignal<Range<u64>>, positions: Vec<Vec2>) -> Element {
-    let mut edges = Vec::new();
+fn GraphView(current_dataset: ReadOnlySignal<LinkStream>, 
+    time_window: ReadOnlySignal<Range<u64>>,
+    t: ReadOnlySignal<u64>,
+    dt: ReadOnlySignal<u64>,
+    mut positions: Signal<Vec<Vec2>>
+    ) -> Element {
     let n = current_dataset.read().node_count();
+    let n_pos = positions.read().len();
+    assert_eq!(n, n_pos);
 
-    let matrix = current_dataset.read().interaction_matrix(time_window());
-    let m = matrix.matrix_max();
-    let normalized_matrix = matrix.matrix_map(|x| x/m);
+    let (edge_weigths, edges) = {
+        let mut edges = Vec::new();
+        let matrix = current_dataset.read().interaction_matrix(t()-dt()/2..t()+dt()/2);
+        let m = matrix.matrix_max();
 
-    let node_weigths = matrix.sum_one_level();
-    let m = node_weigths.matrix_max();
-    let node_weigths_normalized = node_weigths.matrix_map(|x| x/m);
-
-    for n1 in 0..n {
-        for n2 in 0..n {
-            if matrix[n1][n2] > 0. {
-                edges.push((n1, n2));
+        for n1 in 0..n {
+            for n2 in 0..n {
+                if matrix[n1][n2] > 0. {
+                    edges.push((n1, n2));
+                }
             }
         }
-    }
+
+        (matrix.matrix_map(|x| x/m), edges)
+    };
+    
+    let node_weigths = {
+        let matrix = current_dataset.read().interaction_matrix(time_window());
+        let node_weigths = matrix.sum_one_level();
+        let m = node_weigths.matrix_max();
+        node_weigths.matrix_map(|x| x/m)
+    };
+
+
 
     rsx!{
         MyGraph {
             size: n,
-            names: current_dataset.read().data.node_names.iter().map(|x| Some(x.clone())).collect(),
+            names: current_dataset.read().node_names().map(|x| Some(x.to_string())).collect(),
             node_classes: vec![vec![]; n],
-            node_weights: node_weigths_normalized,
-            edge_weights: normalized_matrix,
+            node_weights: node_weigths,
+            edge_weights: edge_weigths,
             edges,
             positions: positions,
         }
@@ -305,29 +369,74 @@ fn InitialView() -> Element {
     }
 }
 
-#[component]
-fn Explorer(name: ReadOnlySignal<String>, dataset: ReadOnlySignal<LinkStreamData>) -> Element {
-    info!("render Explorer");
-    let visible_toogle = use_signal(|| false);
+#[derive(PartialEq, Clone, Props)]
+struct ExplorerProps {
+    link_stream: ReadOnlySignal<LinkStream>,
+    initial_positions: ReadOnlySignal<Vec<Vec2>>, 
+    initial_time_window: ReadOnlySignal<Range<u64>>,
+}
 
-    let mut time_window = use_signal(|| 0..0);
+fn Explorer(props: ExplorerProps) -> Element {
+    let visible_toogle = use_signal(|| false);
+    let time_window = use_branched_signal(move || props.initial_time_window.cloned());
+    let positions = use_branched_signal(move || props.initial_positions.cloned());
+    let r_value = use_signal(|| 0.);
+    
+    let time = use_memo(move || {
+        let Range {start, end} = time_window();
+        let t = start as f64 + (end - start) as f64 * r_value();
+        t as u64
+    });
+
+    let dt = use_memo(move || {
+        let Range {start, end} = time_window();
+        ( end - start) / 100
+    });
+
+    rsx!{
+        GraphView {
+            current_dataset: props.link_stream,
+            positions: positions,
+            t: time,
+            dt: dt,
+            time_window: time_window
+        }
+        Menu {
+            current_dataset: props.link_stream,
+            visible_toogle: visible_toogle,
+            time_window: time_window,
+            time: time,
+            r_value: r_value
+        }
+    }
+}
+
+#[component]
+fn App(
+    name: ReadOnlySignal<String>,
+    dataset_paths: ReadOnlySignal<HashMap<String, &'static str>>
+) -> Element {
     let mut view = use_signal(|| rsx!{});
 
-
-    // TODO: ne pas cloner le stream ?
     let _ = use_resource(move || async move {
         *view.write() = rsx!{ LoadingGif {} };
-        let (stream, positions) = load_linkstream_and_compute_positions(name(), dataset()).await;
-        *time_window.write() = stream.time_window();
+        let name = name();
+        let path = dataset_paths.read().get(&name).unwrap().to_string();
+        info!("{path}");
+        let data_text = reqwest::get(format!("http://localhost:8080/{path}")).await
+                .unwrap()
+                .text()
+                .await
+                .unwrap();
+        let dataset: LinkStreamData = serde_json::from_str(&data_text).unwrap();
+        let (stream, positions) = load_linkstream_and_compute_positions(name, dataset).await;
+        let time_window = stream.time_window();
+
         *view.write() = rsx!{
-            GraphView {
-                current_dataset: stream.clone(),
-                positions: positions,
-                time_window: time_window,
-            }
-            Menu {
-                current_dataset: stream,
-                visible_toogle: visible_toogle
+            Explorer {
+                link_stream: stream,
+                initial_positions: positions,
+                initial_time_window: time_window
             }
         }
     });
@@ -339,20 +448,21 @@ fn Explorer(name: ReadOnlySignal<String>, dataset: ReadOnlySignal<LinkStreamData
 
 #[component]
 fn Home() -> Element {
-    let datasets: Signal<HashMap<String, LinkStreamData>> = use_signal(
-        || DATASETS.into_iter()
-        .map(|(k, v)| (k.to_string(), serde_json::from_str(v).unwrap()))
-        .collect()
-    );
+    let dataset_paths: Signal<HashMap<String, &str>> = 
+        use_signal(|| 
+            DATASETS.into_iter()
+            .map(|(k, v)| (k.to_string(), v))
+            .collect())
+        ;
 
     let mut current_dataset_name = use_signal(|| None);
 
     rsx!{
 
-        link { rel: "stylesheet", href: "home.css" }
-        link { rel: "stylesheet", href: "menu.css" }
-        link { rel: "stylesheet", href: "popup.css" }
-        link { rel: "stylesheet", href: "variables.css" }
+        link { rel: "stylesheet", href: ("home.css") }
+        link { rel: "stylesheet", href: ("menu.css") }
+        link { rel: "stylesheet", href: ("popup.css") }
+        link { rel: "stylesheet", href: ("variables.css") }
 
 
         div {
@@ -361,19 +471,25 @@ fn Home() -> Element {
                 id: "dataset-picker",
                 class: "dropdown-dataset",
                 value: "select your dataset",
+                option {
+                    value: "",
+                    disabled: true,
+                    selected: true,
+                    "Select your dataset"
+                }
                 for (name, _) in DATASETS.iter() {
                     option{
                         value: *name, 
-                        onclick: move |_| *current_dataset_name.write() = Some(name),
+                        onclick: move |_| current_dataset_name.set(Some(*name)),
                         "{name}"
                     }
                 }
             }
         }
         match current_dataset_name() {
-            Some(name) => rsx! {Explorer {
-                name: *name,
-                dataset: datasets.read().get(*name).unwrap().clone()
+            Some(dataset) => rsx! {App {
+                name: current_dataset_name().unwrap(),
+                dataset_paths: dataset_paths
             }},
             None => rsx!{InitialView {}}
         }

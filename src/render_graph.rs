@@ -10,23 +10,19 @@ pub struct GraphProps {
     pub node_classes: Vec<Vec<String>>,
     pub edges: Vec<(usize, usize)>,
     pub edge_weights: Vec<Vec<f64>>,
-    pub positions: ReadOnlySignal<Vec<Vec2>>,
+    pub positions: Signal<Vec<Vec2>>,
 }
 
-pub fn MyGraph(g: GraphProps) -> Element {
+pub fn MyGraph(mut g: GraphProps) -> Element {
     let n = g.size;
     let node_size = 10.;
     // TODO: essayer un autre methode pour voir si plus efficace
     // (vec de signaux ?)
-    let mut positions_edited = use_signal(|| g.positions.cloned());
     let mut selected = use_signal(|| None);
 
-    use_effect(move||
-        assert_eq!(
-            positions_edited.len(),
-            n
-        )
-    );
+    let pos = g.positions.read();
+
+    assert_eq!(n, pos.len());
 
     rsx!{
         svg {
@@ -36,7 +32,7 @@ pub fn MyGraph(g: GraphProps) -> Element {
             onmousemove: move |e: MouseEvent| {
                 if let Some(id) = selected() {
                     let coord = e.coordinates().element();
-                    positions_edited.write()[id] = (coord.x, coord.y).into();
+                    g.positions.write()[id] = (coord.x, coord.y).into();
                 }
             },
             for a in 0..n {
@@ -45,20 +41,29 @@ pub fn MyGraph(g: GraphProps) -> Element {
                         line {
                             stroke: "rgba(0,0,0,{g.edge_weights[a][b]})",
                             stroke_width: "3px",
-                            x1: positions_edited.read()[a].x,
-                            y1: positions_edited.read()[a].y,
-                            x2: positions_edited.read()[b].x,
-                            y2: positions_edited.read()[b].y,
+                            x1: pos[a].x,
+                            y1: pos[a].y,
+                            x2: pos[b].x,
+                            y2: pos[b].y,
                         }
                     }
                 }
             }
             for id in 0..n {
+                // TODO: z-index
+                {info!("{}", pos.len())}
                 circle {
                     onmousedown: move |_| *selected.write() = Some(id),
                     r: node_size*g.node_weights[id],
-                    cx: positions_edited.read()[id].x,
-                    cy: positions_edited.read()[id].y,
+                    cx: pos[id].x,
+                    cy: pos[id].y,
+                }
+                if let Some(name) = &g.names[id] {
+                    text {
+                        x: pos[id].x+20.,
+                        y: pos[id].y+5.,
+                        "{name}"
+                    }
                 }
             }
         }

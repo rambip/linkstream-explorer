@@ -37,6 +37,10 @@ ul, li { /* reset the margin and padding */
     color: var(--disabled-color);
 }
 
+.dropdown-dataset-wrapper option[value=""][disabled] {
+  display: none;
+}
+
 .dropdown-dataset-wrapper {
     padding-top: 4px;
     margin-left: 25%;
