@@ -1,7 +1,7 @@
 [application]
 
 # App (Project) Name
-name = "dioxus-visu-graphe"
+name = "linkstream-explorer"
 
 # Dioxus App Default Platform
 # desktop, web
@@ -17,6 +17,8 @@ asset_dir = "assets"
 
 # HTML title tag content
 title = "dioxus-visu-graphe"
+
+base_path = "linkstream-explorer"
 
 [web.watcher]
 

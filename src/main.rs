@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 
+use std::collections::HashMap;
 use crate::linkstream::{LinkStream, LinkStreamData};
 use crate::utils::Matrix;
 use dioxus::prelude::*;
 use kurbo::Vec2;
-use std::collections::HashMap;
 use std::ops::Range;
 use tracing::info;
 use tracing::Level;
@@ -20,6 +20,10 @@ use svg_timeline::SvgTimeLine;
 
 use render_graph::MyGraph;
 use signal::use_branched_signal;
+
+// TODO: use `Dioxus.toml` to get this path.
+// or read the `reqwest` docs for wasm ?
+const PUBLIC_URL : &str = "http://rambip.github.io/linkstream-explorer";
 
 fn main() {
     // Init logger
@@ -364,7 +368,10 @@ fn Explorer(props: ExplorerProps) -> Element {
 }
 
 #[component]
-fn App(dataset_name: ReadOnlySignal<String>, dataset_path: ReadOnlySignal<String>) -> Element {
+fn App(
+    dataset_name: ReadOnlySignal<String>,
+    dataset_path: ReadOnlySignal<String>,
+) -> Element {
     let mut view = use_signal(|| rsx! {  });
 
     let _ = use_resource(move || async move {
@@ -373,7 +380,7 @@ fn App(dataset_name: ReadOnlySignal<String>, dataset_path: ReadOnlySignal<String
         };
         let name = dataset_name();
         let path = dataset_path();
-        let data_text = reqwest::get(format!("http://localhost:8080/{path}"))
+        let data_text = reqwest::get(format!("{PUBLIC_URL}/{path}"))
             .await
             .unwrap()
             .text()
