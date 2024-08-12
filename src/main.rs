@@ -1,15 +1,13 @@
+#![allow(non_snake_case)]
+
 use crate::linkstream::{LinkStream, LinkStreamData};
 use crate::utils::Matrix;
-use async_std::task;
 use dioxus::prelude::*;
 use kurbo::Vec2;
 use std::collections::HashMap;
 use std::ops::Range;
-use std::time::Duration;
 use tracing::info;
 use tracing::Level;
-//use gloo_worker::oneshot::oneshot;
-//use gloo_worker::Spawnable;
 
 mod force_directed_layout;
 mod linkstream;
@@ -193,16 +191,9 @@ fn Menu(
                 span { id: "current-time", class: "current-time", "current time: {time}" }
             }
             div { class: "right-bar",
-                //ToolBox {}
                 div { id: "graph-info", class: "graph-info",
                     div { class: "rb-area tools",
-                        //h2 {
-                        //    "Tools"
-                        //}
-                        //div {
-                        //    class: "toolbox",
-                        //    "icons"
-                        //}
+                        ToolBox {}
                         div { class: "zoom-container",
                             p { class: "zoom-label", "Zoom" }
                             span { "1x" }
@@ -373,19 +364,15 @@ fn Explorer(props: ExplorerProps) -> Element {
 }
 
 #[component]
-fn App(
-    name: ReadOnlySignal<String>,
-    dataset_paths: ReadOnlySignal<HashMap<String, &'static str>>,
-) -> Element {
+fn App(dataset_name: ReadOnlySignal<String>, dataset_path: ReadOnlySignal<String>) -> Element {
     let mut view = use_signal(|| rsx! {  });
 
     let _ = use_resource(move || async move {
         *view.write() = rsx! {
             LoadingGif {}
         };
-        let name = name();
-        let path = dataset_paths.read().get(&name).unwrap().to_string();
-        info!("{path}");
+        let name = dataset_name();
+        let path = dataset_path();
         let data_text = reqwest::get(format!("http://localhost:8080/{path}"))
             .await
             .unwrap()
@@ -419,7 +406,7 @@ fn Home() -> Element {
 
     rsx! {
 
-        link { rel: "stylesheet", href: ("style.css") }
+        link { rel: "stylesheet", href: "style.css" }
 
         div { class: "dropdown-dataset-wrapper",
             select {
@@ -437,9 +424,9 @@ fn Home() -> Element {
             }
         }
         match current_dataset_name() {
-            Some(dataset) => rsx! {App {
-                name: current_dataset_name().unwrap(),
-                dataset_paths: dataset_paths
+            Some(name) => rsx! {App {
+                dataset_name: name,
+                dataset_path: dataset_paths.read().get(name).unwrap().to_string()
             }},
             None => rsx!{InitialView {}}
         }

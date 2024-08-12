@@ -83,14 +83,6 @@ impl LinkStream {
         self.data.node_names.iter().map(|x| x as _)
     }
 
-    fn data(&self) -> &LinkStreamData {
-        &self.data
-    }
-
-    pub fn name(&self) -> String {
-        self.name.clone()
-    }
-
     pub fn node_count(&self) -> usize {
         self.data.node_count
     }

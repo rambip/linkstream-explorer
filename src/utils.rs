@@ -1,4 +1,4 @@
-trait Coeff: Copy + std::cmp::PartialOrd + core::iter::Sum {}
+pub trait Coeff: Copy + std::cmp::PartialOrd + core::iter::Sum {}
 
 impl Coeff for u32 {}
 impl Coeff for f64 {}

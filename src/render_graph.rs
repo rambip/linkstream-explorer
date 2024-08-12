@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
 use kurbo::Vec2;
-use tracing::info;
 
 #[derive(Props, Clone, PartialEq, Default, Debug)]
 pub struct GraphProps {
@@ -61,7 +60,6 @@ pub fn MyGraph(mut g: GraphProps) -> Element {
             }
             for id in 0..n {
                 // TODO: z-index
-                {info!("{}", pos.len())},
                 circle {
                     onmousedown: move |_| *selected.write() = Some(id),
                     r: NODE_SIZE * g.node_weights[id],
