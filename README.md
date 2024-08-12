@@ -1,9 +1,10 @@
-# Development
+# What it is
 
-Run the following command in the root of the project to start the Dioxus dev server:
+A web app to explore temporal-graphs.
 
-```bash
-dx serve --hot-reload
-```
+You can test it here: https://rambip.github.io/linkstream-explorer
 
-- Open the browser to http://localhost:8080
+
+# Made with
+
+[dioxus](https://dioxuslabs.com/) is a fantastic rust framework to build rust applications.
