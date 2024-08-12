@@ -1,0 +1,46 @@
+on: [push]
+
+name: build
+
+jobs:
+  dx-build:
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1.0.6
+        with:
+          toolchain: stable
+          profile: minimal
+          target: wasm32-unknown-unknown
+          override: true
+
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Dioxus-CLI
+        shell: bash
+        run: cargo install dioxus-cli
+
+      - name: Build Project 🎁
+        shell: bash
+        run: dx build --release && cp ./dist/index.html ./dist/404.html
+
+        - name: upload result
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: "dist/"
+
+  deploy:
+    needs: dx-build
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    environment:
+      name: github-pages
+        # don't forget to go to the settings/environment and to allow main to push !
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+
