@@ -23,7 +23,8 @@ use signal::use_branched_signal;
 
 // TODO: use `Dioxus.toml` to get this path.
 // or read the `reqwest` docs for wasm ?
-const PUBLIC_URL : &str = "https://rambip.github.io/linkstream-explorer";
+//const PUBLIC_URL : &str = "https://rambip.github.io/linkstream-explorer";
+const PUBLIC_URL : &str = "http://localhost:8080/linkstream-explorer";
 
 fn main() {
     // Init logger
@@ -372,6 +373,7 @@ fn App(
     dataset_name: ReadOnlySignal<String>,
     dataset_path: ReadOnlySignal<String>,
 ) -> Element {
+    tracing::info!("starting app");
     let mut view = use_signal(|| rsx! {  });
 
     let _ = use_resource(move || async move {
@@ -409,22 +411,19 @@ fn Home() -> Element {
             .collect()
     });
 
-    let mut current_dataset_name = use_signal(|| None);
+    let mut current_dataset_name: Signal<Option<String>> = use_signal(|| None);
 
     rsx! {
-
-        link { rel: "stylesheet", href: "style.css" }
-
         div { class: "dropdown-dataset-wrapper",
             select {
                 id: "dataset-picker",
                 class: "dropdown-dataset",
                 value: "select your dataset",
+                onchange: move |e: Event<FormData>| current_dataset_name.set(Some(e.value())),
                 option { value: "", disabled: true, selected: true, "Select your dataset" }
                 for (name , _) in DATASETS.iter() {
                     option {
                         value: *name,
-                        onclick: move |_| current_dataset_name.set(Some(*name)),
                         "{name}"
                     }
                 }
@@ -432,8 +431,8 @@ fn Home() -> Element {
         }
         match current_dataset_name() {
             Some(name) => rsx! {App {
-                dataset_name: name,
-                dataset_path: dataset_paths.read().get(name).unwrap().to_string()
+                dataset_name: name.clone(),
+                dataset_path: dataset_paths.read().get(&name).unwrap().to_string()
             }},
             None => rsx!{InitialView {}}
         }
