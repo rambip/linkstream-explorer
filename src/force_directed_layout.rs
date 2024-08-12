@@ -10,13 +10,15 @@ pub struct ForceDirectedLayoutParams {
     pub scale: f64,
 }
 
-pub fn compute(n: usize, interaction_matrix: &[Vec<f64>], params: ForceDirectedLayoutParams) 
-    -> Vec<Vec2> 
-{
+pub fn compute(
+    n: usize,
+    interaction_matrix: &[Vec<f64>],
+    params: ForceDirectedLayoutParams,
+) -> Vec<Vec2> {
     let mut positions: Vec<Vec2> = (0..n)
         .map(|x| x as f64 / n as f64 * 6.2831)
         .map(Vec2::from_angle)
-        .map(|v| v+Vec2::new(1., 1.))
+        .map(|v| v + Vec2::new(1., 1.))
         .collect();
 
     // unite: L**3 T**(-1)
@@ -31,15 +33,15 @@ pub fn compute(n: usize, interaction_matrix: &[Vec<f64>], params: ForceDirectedL
                 let d = positions[n2] - positions[n1];
                 let dist = d.length();
                 // unite: L/t
-                let force_rep = -k_r / (dist*dist);
+                let force_rep = -k_r / (dist * dist);
                 let force_spring = k_s * interaction_matrix[n1][n2] * (dist - params.l_0);
-                velocities[n1] += d * (force_rep + force_spring)/dist;
-                velocities[n2] -= d * (force_rep + force_spring)/dist;
+                velocities[n1] += d * (force_rep + force_spring) / dist;
+                velocities[n2] -= d * (force_rep + force_spring) / dist;
             }
         }
         for n1 in 0..n {
             positions[n1] += velocities[n1] * params.dt;
         }
     }
-    positions.into_iter().map(|x| x*params.scale).collect()
+    positions.into_iter().map(|x| x * params.scale).collect()
 }

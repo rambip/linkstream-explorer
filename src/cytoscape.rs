@@ -97,12 +97,10 @@ pub fn Cytoscape(data: ReadOnlySignal<CytoscapeData>, style: CytoscapeStyle, pan
 
 
     rsx!{
-        div {
-            id: "cy-{id}",
-            class: "graph-container",
+        div { id: "cy-{id}", class: "graph-container",
             script {
                 src: "https://cdn.jsdelivr.net/npm/cytoscape@3.30.0/dist/cytoscape.min.js",
-                onload: setup,
+                onload: setup
             }
         }
     }

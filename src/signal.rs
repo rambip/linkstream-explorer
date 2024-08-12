@@ -1,6 +1,6 @@
-use futures_util::StreamExt;
 use dioxus::prelude::*;
 use dioxus_signals::ReactiveContext;
+use futures_util::StreamExt;
 
 pub fn use_branched_signal<T: 'static>(mut f: impl FnMut() -> T + 'static) -> Signal<T> {
     let location = std::panic::Location::caller();
@@ -22,4 +22,3 @@ pub fn use_branched_signal<T: 'static>(mut f: impl FnMut() -> T + 'static) -> Si
         result
     })
 }
-
