@@ -22,7 +22,7 @@ jobs:
         shell: bash
         run: dx build --release && cp ./dist/index.html ./dist/404.html
 
-        - name: upload result
+      - name: upload result
         uses: actions/upload-pages-artifact@v2
         with:
           path: "dist/"
