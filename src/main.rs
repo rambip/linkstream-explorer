@@ -23,7 +23,7 @@ use signal::use_branched_signal;
 
 // TODO: use `Dioxus.toml` to get this path.
 // or read the `reqwest` docs for wasm ?
-const PUBLIC_URL : &str = "http://rambip.github.io/linkstream-explorer";
+const PUBLIC_URL : &str = "https://rambip.github.io/linkstream-explorer";
 
 fn main() {
     // Init logger
