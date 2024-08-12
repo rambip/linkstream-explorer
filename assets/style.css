@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@300;500;700&family=Reddit+Mono:wght@200..900&family=Source+Code+Pro:wght@700&family=Source+Sans+3:wght@400;600;700&family=Ubuntu&display=swap');
+
 :root {
     --background-card-color: white;
     --header-color: black;
@@ -563,5 +565,5 @@ info {
     color: white;
     background-color: rgb(107, 107, 255);
     
-}@import url('https://fonts.googleapis.com/css2?family=Onest:wght@300;500;700&family=Reddit+Mono:wght@200..900&family=Source+Code+Pro:wght@700&family=Source+Sans+3:wght@400;600;700&family=Ubuntu&display=swap');
+}
 

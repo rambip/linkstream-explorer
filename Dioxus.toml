@@ -33,7 +33,7 @@ watch_path = ["src", "assets"]
 
 # CSS style file
 
-style = []
+style = ["/linkstream-explorer/style.css"]
 
 # Javascript code file
 script = []
