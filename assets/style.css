@@ -1,0 +1,567 @@
+:root {
+    --background-card-color: white;
+    --header-color: black;
+    --paragraph-color: #464646;
+    --light-paragraph-color: #adadad;
+    --disabled-color: #d5d2d2;
+    --info-color: rgb(171, 171, 255);
+    --important-color: red;
+    --info: blue;
+
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: "Reddit Mono";
+    overflow: hidden;
+    background-color: white;
+}
+
+main {
+    height: 100%;
+}
+
+p {
+    margin: 4px;
+}
+
+/*resetting default list style*/
+ul {
+    list-style:none;
+    display: inline-flex;
+}
+ul, li { /* reset the margin and padding */
+    margin: 0;
+    padding: 0;
+
+}
+
+info {
+    color: var(--info);
+    
+}
+
+.disabled {
+    color: var(--disabled-color);
+}
+
+.dropdown-dataset-wrapper option[value=""][disabled] {
+  display: none;
+}
+
+.dropdown-dataset-wrapper {
+    padding-top: 4px;
+    margin-left: 25%;
+    margin-right: 25%;
+    height: 30px;
+}
+
+.dropdown-dataset {
+    padding: 5px;
+    color: gray;
+    border: 1px solid gray;
+    height: 100%;
+    width: 100%;
+    position: relative;
+    z-index: 5;
+}
+
+
+.graph-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 75%;
+}
+
+.gif-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.menu-container {
+    position: absolute;
+    top: 0;
+    left: 0 ;
+    right: 0;
+    display: grid; 
+    height: 100%;
+    grid-template-columns: 1.5fr minmax(0, 0.5fr); 
+    grid-template-rows: 2.6fr 0.2fr; 
+    gap: 0px 0px; 
+    grid-template-areas: 
+      ". ."
+      ". ."; 
+    pointer-events: none;
+}
+
+#main {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+}
+
+#links {
+    width: 400px;
+    text-align: left;
+    font-size: x-large;
+    color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+#links a {
+    color: white;
+    text-decoration: none;
+    margin-top: 20px;
+    margin: 10px;
+    border: white 1px solid;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+#links a:hover {
+    background-color: #1f1f1f;
+    cursor: pointer;
+}
+
+#header {
+    max-width: 1200px;
+}
+
+.menu-container {
+    position: absolute;
+    top: 0;
+    left: 0 ;
+    right: 0;
+    display: grid; 
+    height: 100%;
+    grid-template-columns: 1.5fr minmax(0, 0.5fr); 
+    grid-template-rows: 2.6fr 0.2fr; 
+    gap: 0px 0px; 
+    grid-template-areas: 
+      ". ."
+      ". ."; 
+}
+
+.zoom-label {
+    margin-bottom: 4px;
+}
+
+.right-bar {
+    
+    grid-column: 2;
+    grid-row: 1/3;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 4px;
+    pointer-events: auto;
+    
+}
+
+.rb-area {
+    background-color: var(--background-card-color);
+    height: 100%;
+    margin: 4px;
+    padding: 8px;
+    border-radius: 6px;
+    box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.20);
+    min-width: 250px;
+}
+
+.card-header {
+    color: var(--paragraph-color);
+    font-size: 1.4pc;
+    padding: 0;
+    margin: 4px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: 4px;
+}
+
+.data-output {
+    margin-left: 4px;
+    margin-right: 4px;
+    margin-top: 8px;
+    border-bottom: 1px solid var(--disabled-color);
+    border-top: 1px solid var(--disabled-color);
+    padding-bottom: 8px;
+    padding-top: 8px;
+    padding-left: 4px;
+}
+
+.node-info {
+    margin-top: 12px;
+}
+
+.default-output {
+    font-size: 1.25pc;
+    font-style: italic;
+    text-align: center;
+    font-weight: light;
+}
+
+.toolbox {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+.tools {
+    height: 40%;
+}
+
+.tool {
+    height: 60px;
+    width: 60px;
+    border: 2px solid var(--paragraph-color);
+    border-radius: 6px;
+    margin: 1px;
+    transition-duration: .3s;
+    color: var(--paragraph-color);
+}
+
+.tool:hover {
+    background-color: var(--paragraph-color);
+    color: white !important;
+}
+
+.icon {
+    margin-top: 10px;
+    margin-left: 11px;
+    
+}
+
+.icon-search {
+    margin-top: 12px;
+    margin-left: 8px;
+    
+}
+
+.tags-list {
+    margin-left: 14px;
+    margin-bottom: 8px;
+    margin-top: 8px;
+    padding-top: 10px;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-bottom: 6px;
+    color: var(--light-paragraph-color);
+    display: flex;
+    max-width: fit-content;
+    flex-wrap: wrap;
+    max-height: 82px;
+    overflow: hidden;
+    transition: .15s;
+
+}
+.tags-list:hover {
+    box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.20);
+    border-radius: 8px;
+    
+}
+
+.tag {
+    margin-left: 8px;
+    margin-bottom: 4px;
+    border : 2px solid var(--light-paragraph-color);
+    padding: 3px;
+    border-radius: 6px;
+    font-size: .9pc;
+
+}
+
+
+.time-line-container {
+    display: grid;
+    grid-template-columns: 50px 1fr 50px;
+    grid-template-rows: 1fr 5fr 1fr;
+    background-color: var(--background-card-color);
+    border-radius: 6px;
+    box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.20);
+    height: 70px;
+    width: 100%;
+    margin: 4px;
+    pointer-events: auto;
+}
+
+.arrow-left {
+    grid-column: 1/2;
+    grid-row: 1/4;
+    padding: 20px;
+}
+
+.arrow-right {
+    grid-column: 3/4;
+    grid-row: 1/4;
+    padding: 20px;
+}
+
+.svg-container {
+    padding-left: 5px;
+    padding-right: 5px;
+    grid-column: 2/3;
+    grid-row: 2/3;
+    top: 0;
+    opacity: 0.7;
+    width: 100%;
+}
+
+.time-slider {
+    grid-column: 2/3;
+    grid-row: 1/4;
+    z-index: 1;
+}
+
+.zoom-slider {
+    position: relative;
+    top: 5px;
+}
+
+.rc-slider-mark-text {
+    color: var(--paragraph-color) !important;
+    font-weight: 600;
+}
+
+.rc-slider-mark-text-active {
+    color: #56a8ce !important;
+}
+
+.zoom-container {
+    margin-top: 8px;
+}
+
+.zoom-slider-container {
+    display: flex;
+    flex-direction: row;
+    padding-top: 8px;
+    
+}
+
+#zoom-slider {
+    flex-grow: 1;
+    margin-top: 4px;
+}
+
+.current-time {
+    margin-top: 8px;
+    margin-left: 8px;
+    box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.20);
+    height: 40px;
+    width: 190px;
+    padding-left: 8px;
+    border-radius : 6px;
+}
+
+
+.popup-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    
+}
+
+.popup-container-active {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto;
+    backdrop-filter: blur(5px);
+
+}
+
+.popup {
+    width: 45%;
+    height: auto;
+    background-color: white;
+    box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.20);
+    border-radius: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.popup-upload {
+    width: 45%;
+    height: 40px;
+    background-color: white;
+    box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.20);
+    border-radius: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.popup-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 4px;
+    border-bottom: 1px solid var(--disabled-color);
+}
+
+.popup-title {
+    color: var(--paragraph-color);
+    font-size: 1.4pc;
+    padding: 0;
+    margin: 4px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.close-btn {
+    border-radius: 8px;
+    transition: .1s;
+}
+
+.close-btn:hover {
+    color: white;
+    background-color: var(--paragraph-color);
+
+}
+
+.dummy-container {
+    height: 100%;
+    width: 100%;
+    top: 0;
+    left: 0;
+}
+
+.active-tag-dropdown {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    
+}
+
+.add-existing-tag-dropdown {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 12px;
+    margin-bottom: 12px;  
+}
+
+.create-new-tag {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-top: 12px;
+    margin-bottom: 12px; 
+}
+
+.create-new-tag-submenu {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 12px;
+    margin-bottom: 12px;  
+    font-size : 0.8pc
+}
+
+.form-add-tag {
+    margin-top: 8px;
+}
+
+.btn-create-tag {
+    background-color: rgb(61, 61, 218);
+    color: white;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 4px;
+    margin-top: 16px;
+
+}
+
+.btn-create-tag:hover{
+    background-color: rgb(108, 108, 215);
+    transition: .4s;
+}
+
+
+.trash-btn {
+    border-radius: 8px;
+    transition: .1s;
+}
+
+.trash-btn:hover {
+    box-shadow: 0px 0px 11px 0px rgba(0,0,0,0.75);
+    -webkit-box-shadow: 0px 0px 11px 0px rgba(0,0,0,0.75);
+    -moz-box-shadow: 0px 0px 11px 0px rgba(0,0,0,0.75);
+    transition: .5s;
+
+}
+
+.plus-btn {
+    border-radius: 8px;
+    transition: .1s;
+}
+
+.plus-btn:hover {
+    
+    box-shadow: 0px 0px 11px 0px rgba(0,0,0,0.75);
+    -webkit-box-shadow: 0px 0px 11px 0px rgba(0,0,0,0.75);
+    -moz-box-shadow: 0px 0px 11px 0px rgba(0,0,0,0.75);
+    transition: .5s;
+
+}
+
+#tag-name {
+    border-color: #ccc;
+    border-width: 1px;
+    border-style: solid;
+    padding: 8px;
+    font-size: 16px;
+    color: #7d7a7a;
+    font-family: "Reddit Mono";
+    font-weight: 400;
+    border-radius: 4px;
+}
+
+.name-input-container {
+    display: flex;
+    flex-direction: column;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+#btn-tag-popup {
+    padding: 1px;
+    padding-left: 2px;
+    padding-right: 2px;
+    border-radius: 4px;
+    transition: .5s;
+}
+
+#btn-tag-popup:hover {
+    color: white;
+    background-color: rgb(107, 107, 255);
+    
+}@import url('https://fonts.googleapis.com/css2?family=Onest:wght@300;500;700&family=Reddit+Mono:wght@200..900&family=Source+Code+Pro:wght@700&family=Source+Sans+3:wght@400;600;700&family=Ubuntu&display=swap');
+
