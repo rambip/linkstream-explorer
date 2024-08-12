@@ -302,11 +302,11 @@ async fn load_linkstream_and_compute_positions(name:String, data: LinkStreamData
 
     let params = force_directed_layout::ForceDirectedLayoutParams {
         dt: 0.05,
-        l_0: 0.03,
+        l_0: 0.5 / (n as f64).sqrt(),
         k_r: 0.1,
         k_s: 0.02,
         n_iterations: 500,
-        scale: 500.,
+        scale: 400.,
     };
 
     let positions = force_directed_layout::compute(n, &normalized_matrix, params);
@@ -459,10 +459,7 @@ fn Home() -> Element {
 
     rsx!{
 
-        link { rel: "stylesheet", href: ("home.css") }
-        link { rel: "stylesheet", href: ("menu.css") }
-        link { rel: "stylesheet", href: ("popup.css") }
-        link { rel: "stylesheet", href: ("variables.css") }
+        link { rel: "stylesheet", href: ("style.css") }
 
 
         div {
@@ -493,7 +490,7 @@ fn Home() -> Element {
             }},
             None => rsx!{InitialView {}}
         }
-        Popup {
-        }
+        //Popup {
+        //}
     }
 }
