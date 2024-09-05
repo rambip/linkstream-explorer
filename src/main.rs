@@ -8,18 +8,17 @@ use std::collections::HashMap;
 use std::ops::Range;
 use tracing::info;
 use tracing::Level;
+use uuid::Uuid;
 
 mod force_directed_layout;
 mod linkstream;
 mod render_graph;
-mod signal;
 mod svg_timeline;
 mod utils;
 
 use svg_timeline::SvgTimeLine;
 
 use render_graph::MyGraph;
-use signal::use_branched_signal;
 
 // TODO: use `Dioxus.toml` to get this path.
 // or read the `reqwest` docs for wasm ?
@@ -337,10 +336,23 @@ struct ExplorerProps {
     initial_time_window: ReadOnlySignal<Range<u64>>,
 }
 
+#[component]
+fn Reset(children: Element) -> Element {
+    rsx!{{std::iter::once(
+        rsx! {
+            div {
+                key: "{Uuid::new_v4()}",
+                {children}
+            }
+        }
+    )
+    }}
+}
+
 fn Explorer(props: ExplorerProps) -> Element {
     let visible_toogle = use_signal(|| false);
-    let time_window = use_branched_signal(move || props.initial_time_window.cloned());
-    let positions = use_branched_signal(move || props.initial_positions.cloned());
+    let time_window = use_signal(|| props.initial_time_window.cloned());
+    let positions = use_signal(|| props.initial_positions.cloned());
     let r_value = use_signal(|| 0.);
 
     let time = use_memo(move || {
@@ -355,19 +367,21 @@ fn Explorer(props: ExplorerProps) -> Element {
     });
 
     rsx! {
-        GraphView {
-            current_dataset: props.link_stream,
-            positions,
-            t: time,
-            dt,
-            time_window
-        }
-        Menu {
-            current_dataset: props.link_stream,
-            visible_toogle,
-            time_window,
-            time,
-            r_value
+        Reset {
+            GraphView {
+                current_dataset: props.link_stream,
+                positions,
+                t: time,
+                dt,
+                time_window
+            }
+            Menu {
+                current_dataset: props.link_stream,
+                visible_toogle,
+                time_window,
+                time,
+                r_value
+            }
         }
     }
 }
@@ -394,7 +408,9 @@ fn App(dataset_name: ReadOnlySignal<String>, dataset_path: ReadOnlySignal<String
         let time_window = stream.time_window();
 
         *view.write() = rsx! {
-            Explorer { link_stream: stream, initial_positions: positions, initial_time_window: time_window }
+            Reset {
+                Explorer { link_stream: stream, initial_positions: positions, initial_time_window: time_window }
+            }
         }
     });
 
