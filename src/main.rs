@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 
-use std::collections::HashMap;
 use crate::linkstream::{LinkStream, LinkStreamData};
 use crate::utils::Matrix;
 use dioxus::prelude::*;
 use kurbo::Vec2;
+use std::collections::HashMap;
 use std::ops::Range;
 use tracing::info;
 use tracing::Level;
@@ -24,7 +24,11 @@ use signal::use_branched_signal;
 // TODO: use `Dioxus.toml` to get this path.
 // or read the `reqwest` docs for wasm ?
 //const PUBLIC_URL : &str = "https://rambip.github.io/linkstream-explorer";
-const PUBLIC_URL : &str = "http://localhost:8080/linkstream-explorer";
+#[cfg(debug_assertions)]
+const PUBLIC_URL: &str = "http://localhost:8080/linkstream-explorer";
+
+#[cfg(not(debug_assertions))]
+const PUBLIC_URL: &str = "https://rambip.github.io/linkstream-explorer";
 
 fn main() {
     // Init logger
@@ -163,7 +167,7 @@ fn TimeSlider(
 
 #[allow(non_snake_case)]
 fn ToolBox() -> Element {
-    rsx! {  }
+    rsx! {}
 }
 
 #[component]
@@ -323,7 +327,7 @@ fn GraphView(
 
 #[component]
 fn InitialView() -> Element {
-    rsx! {  }
+    rsx! {}
 }
 
 #[derive(PartialEq, Clone, Props)]
@@ -369,12 +373,9 @@ fn Explorer(props: ExplorerProps) -> Element {
 }
 
 #[component]
-fn App(
-    dataset_name: ReadOnlySignal<String>,
-    dataset_path: ReadOnlySignal<String>,
-) -> Element {
+fn App(dataset_name: ReadOnlySignal<String>, dataset_path: ReadOnlySignal<String>) -> Element {
     tracing::info!("starting app");
-    let mut view = use_signal(|| rsx! {  });
+    let mut view = use_signal(|| rsx! {});
 
     let _ = use_resource(move || async move {
         *view.write() = rsx! {
