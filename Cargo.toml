@@ -8,8 +8,7 @@ edition = "2021"
 
 [dependencies]
 
-dioxus = {version="0.5.6", features= ["web"]}
-dioxus-signals = "0.5.6"
+dioxus = { version = "0.5.6", features = ["web"] }
 # dioxus = { git = "https://github.com/DioxusLabs/dioxus", features = ["web"] }
 
 # Debug
@@ -17,9 +16,11 @@ tracing = "0.1.40"
 dioxus-logger = "0.5.0"
 async-std = "1.12.0"
 serde_json = "1.0.120"
-kurbo = {version="0.11.0", features=["serde"]}
+kurbo = { version = "0.11.0", features = ["serde"] }
 serde = "1.0.203"
 # gloo-worker = {version="0.5.0", features=["futures"]}
 rust-lapper = { version = "1.1.0", features = ["with_serde"] }
 futures-util = "0.3.30"
 reqwest = "0.12.5"
+uuid = { version = "1.10.0", features = ["js", "v4"] }
+wasm-bindgen = "=0.2.92"
