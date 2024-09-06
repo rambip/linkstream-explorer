@@ -17,7 +17,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Install Dioxus-CLI
         shell: bash
-        run: cargo install dioxus-cli --version=0.5.6 && cargo install -f wasm-bindgen-cli --version 0.2.92
+        run: cargo install dioxus-cli --version=0.5.6
 
 
       - name: Build Project 🎁
