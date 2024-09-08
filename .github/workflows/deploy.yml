@@ -14,10 +14,12 @@ jobs:
           target: wasm32-unknown-unknown
           override: true
 
+      - uses: cargo-bins/cargo-binstall@main
+
       - uses: Swatinem/rust-cache@v2
       - name: Install Dioxus-CLI
         shell: bash
-        run: cargo install dioxus-cli --version=0.5.6
+        run: cargo binstall dioxus-cli --version=0.5.6
 
 
       - name: Build Project 🎁
