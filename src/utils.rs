@@ -1,3 +1,6 @@
+use dioxus::prelude::*;
+use uuid::Uuid;
+
 pub trait Coeff: Copy + std::cmp::PartialOrd + core::iter::Sum {}
 
 impl Coeff for u32 {}
@@ -50,4 +53,18 @@ where
     fn sum_one_level(&self) -> Self::Row {
         self.into_iter().map(|x| x.sum_one_level()).collect()
     }
+}
+
+
+#[component]
+pub fn Reset(children: Element) -> Element {
+    rsx!{{std::iter::once(
+        rsx! {
+            div {
+                key: "{Uuid::new_v4()}",
+                {children}
+            }
+        }
+    )
+    }}
 }
