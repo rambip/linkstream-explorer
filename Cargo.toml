@@ -23,3 +23,15 @@ rust-lapper = { version = "1.1.0", features = ["with_serde"] }
 futures-util = "0.3.30"
 reqwest = "0.12.5"
 uuid = { version = "1.10.0", features = ["js", "v4"] }
+
+[profile]
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"
