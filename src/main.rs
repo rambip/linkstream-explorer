@@ -208,15 +208,13 @@ fn InitialView() -> Element {
 #[derive(PartialEq, Clone, Props)]
 struct ExplorerProps {
     link_stream: ReadOnlySignal<LinkStream>,
-    initial_positions: ReadOnlySignal<Vec<Vec2>>,
-    initial_time_window: ReadOnlySignal<Range<u64>>,
+    positions: Signal<Vec<Vec2>>,
+    time_window: Signal<Range<u64>>,
 }
 
 
 fn Explorer(props: ExplorerProps) -> Element {
     let visible_toogle = use_signal(|| false);
-    let time_window = use_signal(|| props.initial_time_window.cloned());
-    let positions = use_signal(|| props.initial_positions.cloned());
     let r_value = use_signal(|| 0.);
 
     let time = use_memo(move || {
@@ -231,7 +229,6 @@ fn Explorer(props: ExplorerProps) -> Element {
     });
 
     rsx! {
-        Reset {
             GraphView {
                 current_dataset: props.link_stream,
                 positions,
@@ -245,7 +242,6 @@ fn Explorer(props: ExplorerProps) -> Element {
                 time_window,
                 time,
                 r_value
-            }
         }
     }
 }
@@ -272,9 +268,7 @@ fn App(dataset_name: ReadOnlySignal<String>, dataset_path: ReadOnlySignal<String
         let time_window = stream.time_window();
 
         *view.write() = rsx! {
-            Reset {
-                Explorer { link_stream: stream, initial_positions: positions, initial_time_window: time_window }
-            }
+            Explorer { link_stream: stream, positions: Signal::new(positions), time_window: Signal::new(time_window) }
         }
     });
 
