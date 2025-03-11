@@ -23,12 +23,12 @@ jobs:
 
       - name: Build Project 🎁
         shell: bash
-        run: dx build --release
+        run: dx bundle
 
       - name: upload result
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "dist/"
+          path: "dist/public"
 
   deploy:
     runs-on: ubuntu-latest
