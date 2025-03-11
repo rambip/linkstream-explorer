@@ -21,13 +21,12 @@ jobs:
         shell: bash
         run: cargo binstall -y --force dioxus-cli --version=0.5.6
 
-
       - name: Build Project 🎁
         shell: bash
         run: dx build --release && cp ./dist/index.html ./dist/404.html
 
       - name: upload result
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v4
         with:
           path: "dist/"
 
@@ -36,16 +35,16 @@ jobs:
     needs: dx-build
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
+      pages: write # to deploy to Pages
+      id-token: write # to verify the deployment originates from an appropriate source
 
     environment:
-      name: github-pages
+      name:
+        github-pages
         # don't forget to go to the settings/environment and to allow main to push !
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
-
+        uses: actions/deploy-pages@v3
