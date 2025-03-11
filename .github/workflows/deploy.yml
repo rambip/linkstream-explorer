@@ -23,7 +23,7 @@ jobs:
 
       - name: Build Project 🎁
         shell: bash
-        run: dx build --release && cp ./dist/index.html ./dist/404.html
+        run: dx build --release
 
       - name: upload result
         uses: actions/upload-pages-artifact@v3
