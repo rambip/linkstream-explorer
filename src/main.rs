@@ -6,7 +6,6 @@ use dioxus::prelude::*;
 use kurbo::Vec2;
 use std::collections::HashMap;
 use std::ops::Range;
-use tracing::Level;
 
 mod force_directed_layout;
 mod linkstream;
@@ -36,7 +35,7 @@ const CSS: Asset = asset!("assets/style.css");
 fn main() {
     #[cfg(debug_assertions)]
     // Init logger
-    dioxus_logger::init(Level::INFO).expect("failed to init logger");
+    dioxus_logger::init(tracing::Level::INFO).expect("failed to init logger");
 
     launch(Home);
 }
