@@ -12,20 +12,26 @@ mod force_directed_layout;
 mod linkstream;
 mod render_graph;
 mod svg_timeline;
-mod utils;
 mod time_slider;
+mod utils;
 
-
-use svg_timeline::SvgTimeLine;
 use render_graph::MyGraph;
+use svg_timeline::SvgTimeLine;
 use time_slider::TimeSlider;
-use utils::Reset;
 
 #[cfg(debug_assertions)]
-const PUBLIC_URL: &str = "http://localhost:8080/linkstream-explorer";
+const PUBLIC_URL: &str = "http://localhost:8080";
 
 #[cfg(not(debug_assertions))]
-const PUBLIC_URL: &str = "https://rambip.github.io/linkstream-explorer";
+const PUBLIC_URL: &str = "https://rambip.github.io";
+
+const DATASETS: [(&'static str, Asset); 3] = [
+    ("baboon", asset!("assets/baboon.json")),
+    ("school", asset!("assets/school.json")),
+    ("example", asset!("assets/example.json")),
+];
+
+const CSS: Asset = asset!("assets/style.css");
 
 fn main() {
     #[cfg(debug_assertions)]
@@ -34,8 +40,6 @@ fn main() {
 
     launch(Home);
 }
-
-
 
 #[allow(non_snake_case)]
 fn ToolBox() -> Element {
@@ -47,7 +51,7 @@ fn LoadingGif() -> Element {
     rsx! {
         div { class: "graph-container gif-container",
             img {
-                src: "loading_state-optimize.gif",
+                src: asset!("assets/loading_state-optimize.gif"),
                 alt: "loading_gif",
                 height: "250px",
                 width: "320px"
@@ -108,17 +112,11 @@ fn Menu(
 }
 
 #[component]
-fn Popup(children: Vec<VNode>) -> Element {
+fn Popup(children: Element) -> Element {
     rsx! {
-        div { class: "dummy-container", {children.into_iter()} }
+        div { class: "dummy-container", {children} }
     }
 }
-
-static DATASETS: [(&'static str, &'static str); 3] = [
-    ("baboon", ("baboon.json")),
-    ("school", ("school.json")),
-    ("example", ("example.json")),
-];
 
 //#[oneshot]
 async fn load_linkstream_and_compute_positions(
@@ -212,34 +210,33 @@ struct ExplorerProps {
     time_window: Signal<Range<u64>>,
 }
 
-
 fn Explorer(props: ExplorerProps) -> Element {
     let visible_toogle = use_signal(|| false);
     let r_value = use_signal(|| 0.);
 
     let time = use_memo(move || {
-        let Range { start, end } = time_window();
+        let Range { start, end } = *props.time_window.read();
         let t = start as f64 + (end - start) as f64 * r_value();
         t as u64
     });
 
     let dt = use_memo(move || {
-        let Range { start, end } = time_window();
+        let Range { start, end } = *props.time_window.read();
         (end - start) / 100
     });
 
     rsx! {
             GraphView {
                 current_dataset: props.link_stream,
-                positions,
+                positions: props.positions,
                 t: time,
                 dt,
-                time_window
+                time_window: props.time_window,
             }
             Menu {
                 current_dataset: props.link_stream,
                 visible_toogle,
-                time_window,
+                time_window: props.time_window,
                 time,
                 r_value
         }
@@ -257,7 +254,7 @@ fn App(dataset_name: ReadOnlySignal<String>, dataset_path: ReadOnlySignal<String
         };
         let name = dataset_name();
         let path = dataset_path();
-        let data_text = reqwest::get(format!("{PUBLIC_URL}/{path}"))
+        let data_text = reqwest::get(format!("{PUBLIC_URL}{path}"))
             .await
             .unwrap()
             .text()
@@ -279,7 +276,7 @@ fn App(dataset_name: ReadOnlySignal<String>, dataset_path: ReadOnlySignal<String
 
 #[component]
 fn Home() -> Element {
-    let dataset_paths: Signal<HashMap<String, &str>> = use_signal(|| {
+    let dataset_paths: Signal<HashMap<String, Asset>> = use_signal(|| {
         DATASETS
             .into_iter()
             .map(|(k, v)| (k.to_string(), v))
@@ -289,6 +286,9 @@ fn Home() -> Element {
     let mut current_dataset_name: Signal<Option<String>> = use_signal(|| None);
 
     rsx! {
+        document::Stylesheet {
+            href: CSS
+        }
         div { class: "dropdown-dataset-wrapper",
             select {
                 id: "dataset-picker",
